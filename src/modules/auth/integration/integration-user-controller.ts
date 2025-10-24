@@ -1,14 +1,16 @@
 import { Controller, Patch } from '@tsoa/runtime';
-import { Body, Delete, Get, Post, Route, Tags } from 'tsoa';
+import { Body, Delete, Get, Post, Route, Request, Tags } from 'tsoa';
 import { Security } from '../index';
 import { SecurityNames } from '../../../helpers/security';
 import { securityGroups } from '../../../helpers/security-groups';
+import { Request as ExpressRequest } from 'express';
 import IntegrationUserService, {
   IntegrationUserCreateRequest,
   IntegrationUserResponse,
   IntegrationUserUpdateRequest,
 } from './integration-user-service';
 import AuthService from '../auth-service';
+import logger from '../../../logger';
 
 @Tags('User')
 @Route('user/integration')
@@ -57,11 +59,13 @@ export class IntegrationUserController extends Controller {
   @Security(SecurityNames.LOCAL, securityGroups.integrationUsers.privileged)
   @Post('')
   public async createIntegrationUser(
+    @Request() req: ExpressRequest,
     @Body() body: IntegrationUserCreateRequest,
   ): Promise<IntegrationUserResponse> {
     const service = new IntegrationUserService();
     service.validateEndpoints(body.endpoints);
     const user = await service.createIntegrationUser(body);
+    logger.audit(req.user, `Created integrations user "${user.name}" (id: ${user.id}) with endpoints: ${user.endpoints.join(', ')}.`);
     return service.asResponse(user);
   }
 
@@ -69,6 +73,7 @@ export class IntegrationUserController extends Controller {
   @Patch('{id}')
   public async updateIntegrationUser(
     id: number,
+    @Request() req: ExpressRequest,
     @Body() body: IntegrationUserUpdateRequest,
   ): Promise<IntegrationUserResponse> {
     const service = new IntegrationUserService();
@@ -76,14 +81,19 @@ export class IntegrationUserController extends Controller {
       service.validateEndpoints(body.endpoints);
     }
     const user = await service.updateIntegrationUser(id, body);
+    logger.audit(req.user, `Updated integrations user "${user.name}" (id: ${user.id}) for endpoints: ${user.endpoints.join(', ')}.`);
     return service.asResponse(user);
   }
 
   @Security(SecurityNames.LOCAL, securityGroups.integrationUsers.privileged)
   @Delete('{id}')
-  public async deleteIntegrationUser(id: number): Promise<void> {
+  public async deleteIntegrationUser(
+    id: number,
+    @Request() req: ExpressRequest,
+  ): Promise<void> {
     const service = new IntegrationUserService();
-    await service.getSingleIntegrationUser(id);
+    const user = await service.getSingleIntegrationUser(id);
     await service.deleteIntegrationUser(id);
+    logger.audit(req.user, `Deleted integrations user "${user.name}" (id: ${user.id}).`);
   }
 }
