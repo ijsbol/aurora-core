@@ -181,6 +181,9 @@ export class SpotifyController extends Controller {
   @Security(SecurityNames.LOCAL, securityGroups.spotify.base)
   @Get('currently-playing')
   public getSpotifyCurrentlyPlaying() {
+    if (SpotifyTrackHandler.getInstance() == null || SpotifyTrackHandler.getInstance().musicEmitter == null) {
+      return null;
+    }
     return SpotifyTrackHandler.getInstance().musicEmitter.getCurrentlyPlayingTrack;
   }
 
