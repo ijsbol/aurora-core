@@ -31,9 +31,13 @@ export class BeatGeneratorController extends Controller {
    */
   @Post('real-time')
   @Security(SecurityNames.INTEGRATION, ['setRealTimeBeatDetector'])
-  public setRealTimeBeatDetector(@Body() params: ArtificialBeatGeneratorParams) {
+  public setRealTimeBeatDetector(
+    @Body() params: ArtificialBeatGeneratorParams,
+    @Request() req: ExpressRequest,
+  ) {
     const manager = BeatManager.getInstance();
     const generator = manager.get(REAL_TIME_BEAT_GENERATOR_ID);
+    logger.audit(req.user, `Set Real Time Beat Detector BPM to "${params.bpm}".`);
     if (generator) {
       (generator as SimpleBeatGenerator).setBpm(params.bpm);
     } else {
@@ -53,7 +57,8 @@ export class BeatGeneratorController extends Controller {
    */
   @Delete('real-time')
   @Security(SecurityNames.INTEGRATION, ['stopRealTimeBeatDetector'])
-  public stopRealTimeBeatDetector() {
+  public stopRealTimeBeatDetector(@Request() req: ExpressRequest) {
+    logger.audit(req.user, 'Stop Real Time Beat Detector.');
     const manager = BeatManager.getInstance();
     const generator = manager.get(REAL_TIME_BEAT_GENERATOR_ID);
     if (generator) {
